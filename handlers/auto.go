@@ -54,3 +54,45 @@ func Register(db *gorm.DB) fiber.Handler {
 	}
 
 }
+func Login(db *gorm.DB) fiber.Handler{
+	return func (c *fiber.Ctx) error {
+		type request struct {
+			Email string `json:"email"`
+			Password string `json:"password"`
+		}
+		var body request
+		if err:=c.BodyParser(&body);err != nil {
+			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{
+				"error": "Invalid Request",
+			})
+		}
+		var user models.User
+		if err:=db.Where("email=?",body.Email).First(&user).Error;err!= nil {
+			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{
+				"error": "User not found",
+			})
+		}
+		if err:=utils.CompareHashPassword(user.Password,body.Password);err != nil {
+			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{
+				"error": "Invalid Password ",
+			})
+		}
+
+		accessToken,err :=utils.GenerateJWT(user.ID,false)
+		if err != nil {
+			return c.Status(500).JSON(fiber.Map{
+				"error": "Access Token generation failed",
+			})
+		}
+		refreshToken,err :=utils.GenerateJWT(user.ID,false)
+		if err != nil {
+			return c.Status(500).JSON(fiber.Map{
+				"error": "Refresh Token generation failed",
+			})
+		}
+		return c.JSON(fiber.Map{"accessToken":accessToken,"refreshToken":refreshToken})
+
+	}
+}
+
+
