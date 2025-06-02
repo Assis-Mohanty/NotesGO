@@ -54,6 +54,8 @@ func Register(db *gorm.DB) fiber.Handler {
 	}
 
 }
+
+
 func Login(db *gorm.DB) fiber.Handler{
 	return func (c *fiber.Ctx) error {
 		type request struct {
